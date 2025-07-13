@@ -5,9 +5,16 @@ class Subject {
   String name;
   int credit;
   String grade;
+  int semester; // 🔹 Add this field
 
-  Subject({required this.name, required this.credit, required this.grade});
+  Subject({
+    required this.name,
+    required this.credit,
+    required this.grade,
+    required this.semester, // 🔹 Include in constructor
+  });
 }
+
 
 class SubjectsPage extends StatefulWidget {
   final String username;
@@ -40,24 +47,24 @@ class _SubjectsPageState extends State<SubjectsPage> with TickerProviderStateMix
 
   final Map<String, Map<int, Map<int, List<String>>>> subjectMap = {
     'CSE': {
-      1: {1: ['Maths I', 'Physics'], 2: ['Programming', 'Digital Logic']},
-      2: {3: ['OOPs', 'Data Structures'], 4: ['DBMS', 'OS']},
-      3: {5: ['CN', 'SE'], 6: ['AI', 'ML']},
-      4: {7: ['Cloud', 'IoT'], 8: ['Project', 'Big Data']},
+      1: {1: ['Linear Algbera', 'Physics','C Program','Technical english','Tamil'], 2: ['Data Structure', 'OOPS','EMP','Python','Business English']},
+      2: {3: ['Discrete Maths', 'DAA','DBMS','SE''DPCO','Java'], 4: ['FullStack', 'OS','CN','Business Ethics','Cloud','Desgin Thinking ']},
+      3: {5: ['IOT', 'Data Science','AIML'], 6: ['Cyber Security', 'Elective I','Elective II']},
+      4: {7: ['ProjectI', 'OOAD'], 8: ['Project', 'Big Data']},
     },
     'IT': {
-      1: {1: ['Maths I', 'Chemistry'], 2: ['Python', 'Digital Circuits']},
-      2: {3: ['Java', 'DBMS'], 4: ['OS', 'CN']},
-      3: {5: ['Web Tech', 'AI'], 6: ['Cyber Security', 'Cloud']},
+      1: {1: ['Linear Algbera', 'Physics','C Program','Tamil','English'], 2: ['Python', 'OOPS','EMP','DSA']},
+      2: {3: ['Java', 'DBMS','SE','DPCO','DAA','Discrete Maths'], 4: ['OS', 'CN','Full stack','cloud','Mission Vision']},
+      3: {5: ['Web Tech', 'AI','IOT','Data Science'], 6: ['Cyber Security', 'Elective I']},
       4: {7: ['Blockchain', 'DevOps'], 8: ['Capstone', 'Big Data']},
     },
     'CSBS': {
-      1: {1: ['Maths I', 'Stats'], 2: ['Business Studies', 'Python']},
-      2: {3: ['OOPs', 'DBMS'], 4: ['AI', 'Cloud']},
-      3: {5: ['ML', 'IoT'], 6: ['Cyber Laws', 'SE']},
+      1: {1: ['Maths I', 'Stats','Physics','C Program','Tamil','English'], 2: ['Data Structure', 'OOPS','EMP','Python','Business English']},
+      2: {3: ['Java', 'DBMS','DPCO','DAA','Discrete Maths'], 4: ['OS', 'CN','Full stack','Statics','IIPM']},
+      3: {5: ['ML', 'IoT','Data Science','AI'], 6: ['Cyber Laws', 'SE']},
       4: {7: ['Data Mining', 'Big Data'], 8: ['Project']},
     },
-    // Add similar maps for AIDS, AIML, EEE, ECE, MECH...
+
   };
 
   @override
@@ -77,14 +84,16 @@ class _SubjectsPageState extends State<SubjectsPage> with TickerProviderStateMix
   void addSubject() {
     if (_formKey.currentState!.validate()) {
       setState(() {
-        subjects.add(
-          Subject(
-            name: isCustomSubject ? customSubjectController.text : selectedSubject,
-            credit: int.parse(creditController.text),
-            grade: selectedGrade,
-          ),
-        );
-        _listAnimationController.forward(from: 0);
+            subjects.add(
+              Subject(
+                name: isCustomSubject ? customSubjectController.text : selectedSubject,
+                credit: int.parse(creditController.text),
+                grade: selectedGrade,
+                semester: selectedSemester, // 🔹 Add this line
+              ),
+            );
+
+            _listAnimationController.forward(from: 0);
         creditController.clear();
         customSubjectController.clear();
         selectedGrade = 'O';
