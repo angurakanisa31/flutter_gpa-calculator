@@ -9,7 +9,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
-  final TextEditingController nameController = TextEditingController(); // 👤 Added
+  final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -21,6 +21,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   late Animation<Offset> _slideAnimation;
 
   bool _isLoading = false;
+  bool _isPasswordVisible = false;
 
   @override
   void initState() {
@@ -54,7 +55,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   void dispose() {
     _fadeController.dispose();
     _slideController.dispose();
-    nameController.dispose(); // 👤 Dispose
+    nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
@@ -90,7 +91,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         context,
         MaterialPageRoute(
           builder: (_) => SubjectsPage(
-            username: nameController.text.trim(), // 👤 Pass full name
+            username: nameController.text.trim(),
           ),
         ),
       );
@@ -162,23 +163,48 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                           nameController,
                           'Name',
                           Icons.person,
-                          validator: (val) => val!.isEmpty ? "Enter your name" : null,
+                          validator: (val) =>
+                          val!.isEmpty ? "Enter your name" : null,
                         ),
                         SizedBox(height: 12),
                         _buildTextField(
                           emailController,
                           'Email',
                           Icons.email,
-                          validator: (val) => val!.isEmpty ? "Enter your email" : null,
+                          validator: (val) {
+                            if (val == null || val.isEmpty) {
+                              return 'Enter your email';
+                            }
+                            final emailRegex = RegExp(
+                                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                            if (!emailRegex.hasMatch(val)) {
+                              return 'Enter a valid email address';
+                            }
+                            return null;
+                          },
                         ),
                         SizedBox(height: 12),
                         _buildTextField(
                           passwordController,
                           'Password',
                           Icons.lock,
-                          obscureText: true,
-                          validator: (val) =>
-                          val!.length < 6 ? "Password must be at least 6 characters" : null,
+                          obscureText: !_isPasswordVisible,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _isPasswordVisible
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              color: Colors.teal,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _isPasswordVisible = !_isPasswordVisible;
+                              });
+                            },
+                          ),
+                          validator: (val) => val!.length < 6
+                              ? "Password must be at least 6 characters"
+                              : null,
                         ),
                         SizedBox(height: 24),
                         _isLoading
@@ -186,7 +212,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                             : ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.teal[600],
-                            padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 40, vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -211,6 +238,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       String label,
       IconData icon, {
         bool obscureText = false,
+        Widget? suffixIcon,
         String? Function(String?)? validator,
       }) {
     return TextFormField(
@@ -221,6 +249,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         prefixIcon: Icon(icon, color: Colors.teal),
         labelText: label,
         labelStyle: TextStyle(color: Colors.teal[700]),
+        suffixIcon: suffixIcon,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         focusedBorder: OutlineInputBorder(
           borderSide: BorderSide(color: Colors.teal),
