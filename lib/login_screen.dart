@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'subjects_page.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -7,15 +9,18 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
-  final TextEditingController nameController = TextEditingController();
+  final TextEditingController nameController = TextEditingController(); // 👤 Added
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
+
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -49,7 +54,67 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   void dispose() {
     _fadeController.dispose();
     _slideController.dispose();
+    nameController.dispose(); // 👤 Dispose
+    emailController.dispose();
+    passwordController.dispose();
     super.dispose();
+  }
+
+  Future<bool> checkConnection() async {
+    final connectivityResult = await Connectivity().checkConnectivity();
+    return connectivityResult != ConnectivityResult.none;
+  }
+
+  void loginUser() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
+
+    final isOnline = await checkConnection();
+    if (!isOnline) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('❌ No Internet Connection')),
+      );
+      return;
+    }
+
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      setState(() => _isLoading = false);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SubjectsPage(
+            username: nameController.text.trim(), // 👤 Pass full name
+          ),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      setState(() => _isLoading = false);
+
+      String errorMessage = 'Login failed.';
+      if (e.code == 'user-not-found') {
+        errorMessage = 'No user found with this email.';
+      } else if (e.code == 'wrong-password') {
+        errorMessage = 'Incorrect password.';
+      } else if (e.code == 'invalid-email') {
+        errorMessage = 'Invalid email format.';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+    } catch (_) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("An unexpected error occurred.")),
+      );
+    }
   }
 
   @override
@@ -58,7 +123,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFE0F7FA), Color(0xFFFFF9C4)], // Light teal to soft yellow
+            colors: [Color(0xFFE0F7FA), Color(0xFFFFF9C4)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -76,57 +141,61 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                 color: Colors.white.withOpacity(0.95),
                 child: Padding(
                   padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: Text(
-                          'Welcome to GPA Calculator',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.teal[800],
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: Text(
+                            'Welcome to GPA Calculator',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.teal[800],
+                            ),
                           ),
                         ),
-                      ),
-                      SizedBox(height: 20),
-                      _buildTextField(nameController, 'Name', Icons.person),
-                      SizedBox(height: 12),
-                      _buildTextField(emailController, 'Email', Icons.email),
-                      SizedBox(height: 12),
-                      _buildTextField(
-                        passwordController,
-                        'Password',
-                        Icons.lock,
-                        obscureText: true,
-                      ),
-                      SizedBox(height: 24),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.teal[600],
-                          padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
+                        SizedBox(height: 20),
+                        _buildTextField(
+                          nameController,
+                          'Name',
+                          Icons.person,
+                          validator: (val) => val!.isEmpty ? "Enter your name" : null,
                         ),
-                        child: Text('Login'),
-                        onPressed: () {
-                          if (nameController.text.isNotEmpty &&
-                              emailController.text.isNotEmpty &&
-                              passwordController.text.isNotEmpty) {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => SubjectsPage(
-                                  username: nameController.text,
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    ],
+                        SizedBox(height: 12),
+                        _buildTextField(
+                          emailController,
+                          'Email',
+                          Icons.email,
+                          validator: (val) => val!.isEmpty ? "Enter your email" : null,
+                        ),
+                        SizedBox(height: 12),
+                        _buildTextField(
+                          passwordController,
+                          'Password',
+                          Icons.lock,
+                          obscureText: true,
+                          validator: (val) =>
+                          val!.length < 6 ? "Password must be at least 6 characters" : null,
+                        ),
+                        SizedBox(height: 24),
+                        _isLoading
+                            ? CircularProgressIndicator()
+                            : ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.teal[600],
+                            padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: Text('Login'),
+                          onPressed: loginUser,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -137,10 +206,17 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool obscureText = false}) {
-    return TextField(
+  Widget _buildTextField(
+      TextEditingController controller,
+      String label,
+      IconData icon, {
+        bool obscureText = false,
+        String? Function(String?)? validator,
+      }) {
+    return TextFormField(
       controller: controller,
       obscureText: obscureText,
+      validator: validator,
       decoration: InputDecoration(
         prefixIcon: Icon(icon, color: Colors.teal),
         labelText: label,

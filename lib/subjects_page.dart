@@ -1,28 +1,14 @@
 import 'package:flutter/material.dart';
+import 'models/subject.dart';
+import 'services/firestore_service.dart';
 import 'summary_page.dart';
-
-class Subject {
-  String name;
-  int credit;
-  String grade;
-  int semester; // 🔹 Add this field
-
-  Subject({
-    required this.name,
-    required this.credit,
-    required this.grade,
-    required this.semester, // 🔹 Include in constructor
-  });
-}
-
 
 class SubjectsPage extends StatefulWidget {
   final String username;
-
   SubjectsPage({required this.username});
 
   @override
-  _SubjectsPageState createState() => _SubjectsPageState();
+  State<SubjectsPage> createState() => _SubjectsPageState();
 }
 
 class _SubjectsPageState extends State<SubjectsPage> with TickerProviderStateMixin {
@@ -37,6 +23,8 @@ class _SubjectsPageState extends State<SubjectsPage> with TickerProviderStateMix
   String selectedGrade = 'O';
   bool isCustomSubject = false;
 
+  final FirestoreService firestoreService = FirestoreService();
+
   final List<String> departments = ['CSE', 'IT', 'CSBS', 'AIDS', 'AIML', 'EEE', 'ECE', 'MECH'];
   final List<int> years = [1, 2, 3, 4];
   final List<int> semesters = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -47,24 +35,41 @@ class _SubjectsPageState extends State<SubjectsPage> with TickerProviderStateMix
 
   final Map<String, Map<int, Map<int, List<String>>>> subjectMap = {
     'CSE': {
-      1: {1: ['Linear Algbera', 'Physics','C Program','Technical english','Tamil'], 2: ['Data Structure', 'OOPS','EMP','Python','Business English']},
-      2: {3: ['Discrete Maths', 'DAA','DBMS','SE''DPCO','Java'], 4: ['FullStack', 'OS','CN','Business Ethics','Cloud','Desgin Thinking ']},
-      3: {5: ['IOT', 'Data Science','AIML'], 6: ['Cyber Security', 'Elective I','Elective II']},
-      4: {7: ['ProjectI', 'OOAD'], 8: ['Project', 'Big Data']},
+      1: {
+        1: ['Linear Algebra', 'Physics', 'C Program', 'Technical English', 'Tamil'],
+        2: ['Data Structure', 'OOPS', 'EMP', 'Python', 'Business English']
+      },
+      2: {
+        3: ['Discrete Maths', 'DAA', 'DBMS', 'SE', 'DPCO', 'Java'],
+        4: ['FullStack', 'OS', 'CN', 'Business Ethics', 'Cloud', 'Design Thinking']
+      },
+      3: {5: ['IOT', 'Data Science', 'AIML'], 6: ['Cyber Security', 'Elective I', 'Elective II']},
+      4: {7: ['Project I', 'OOAD'], 8: ['Project', 'Big Data']}
     },
     'IT': {
-      1: {1: ['Linear Algbera', 'Physics','C Program','Tamil','English'], 2: ['Python', 'OOPS','EMP','DSA']},
-      2: {3: ['Java', 'DBMS','SE','DPCO','DAA','Discrete Maths'], 4: ['OS', 'CN','Full stack','cloud','Mission Vision']},
-      3: {5: ['Web Tech', 'AI','IOT','Data Science'], 6: ['Cyber Security', 'Elective I']},
-      4: {7: ['Blockchain', 'DevOps'], 8: ['Capstone', 'Big Data']},
+      1: {
+        1: ['Linear Algebra', 'Physics', 'C Program', 'Tamil', 'English'],
+        2: ['Python', 'OOPS', 'EMP', 'DSA']
+      },
+      2: {
+        3: ['Java', 'DBMS', 'SE', 'DPCO', 'DAA', 'Discrete Maths'],
+        4: ['OS', 'CN', 'Full stack', 'Cloud', 'Mission Vision']
+      },
+      3: {5: ['Web Tech', 'AI', 'IOT', 'Data Science'], 6: ['Cyber Security', 'Elective I']},
+      4: {7: ['Blockchain', 'DevOps'], 8: ['Capstone', 'Big Data']}
     },
     'CSBS': {
-      1: {1: ['Maths I', 'Stats','Physics','C Program','Tamil','English'], 2: ['Data Structure', 'OOPS','EMP','Python','Business English']},
-      2: {3: ['Java', 'DBMS','DPCO','DAA','Discrete Maths'], 4: ['OS', 'CN','Full stack','Statics','IIPM']},
-      3: {5: ['ML', 'IoT','Data Science','AI'], 6: ['Cyber Laws', 'SE']},
-      4: {7: ['Data Mining', 'Big Data'], 8: ['Project']},
-    },
-
+      1: {
+        1: ['Maths I', 'Stats', 'Physics', 'C Program', 'Tamil', 'English'],
+        2: ['Data Structure', 'OOPS', 'EMP', 'Python', 'Business English']
+      },
+      2: {
+        3: ['Java', 'DBMS', 'DPCO', 'DAA', 'Discrete Maths'],
+        4: ['OS', 'CN', 'Full stack', 'Statics', 'IIPM']
+      },
+      3: {5: ['ML', 'IoT', 'Data Science', 'AI'], 6: ['Cyber Laws', 'SE']},
+      4: {7: ['Data Mining', 'Big Data'], 8: ['Project']}
+    }
   };
 
   @override
@@ -83,22 +88,29 @@ class _SubjectsPageState extends State<SubjectsPage> with TickerProviderStateMix
 
   void addSubject() {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-            subjects.add(
-              Subject(
-                name: isCustomSubject ? customSubjectController.text : selectedSubject,
-                credit: int.parse(creditController.text),
-                grade: selectedGrade,
-                semester: selectedSemester, // 🔹 Add this line
-              ),
-            );
+      final subject = Subject(
+        name: isCustomSubject ? customSubjectController.text : selectedSubject,
+        credit: int.parse(creditController.text),
+        grade: selectedGrade,
+        semester: selectedSemester,
+      );
 
-            _listAnimationController.forward(from: 0);
-        creditController.clear();
-        customSubjectController.clear();
-        selectedGrade = 'O';
-        isCustomSubject = false;
+      setState(() {
+        subjects.add(subject);
+        _listAnimationController.forward(from: 0);
       });
+
+      firestoreService.addSubject(widget.username, subject);
+
+      creditController.clear();
+      customSubjectController.clear();
+      selectedGrade = 'O';
+      isCustomSubject = false;
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Subject added ✅'),
+        backgroundColor: Colors.green,
+      ));
     }
   }
 

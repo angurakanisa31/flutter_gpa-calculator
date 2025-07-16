@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'models/subject.dart';
 import 'result_page.dart';
 import 'subjects_page.dart';
 

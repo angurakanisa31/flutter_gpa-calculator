@@ -18,6 +18,33 @@ class ResultPage extends StatelessWidget {
       return '💡 Needs more effort!';
   }
 
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Logout Confirmation'),
+        content: Text('Do you want to logout?'),
+        actions: [
+          TextButton(
+            child: Text('Cancel'),
+            onPressed: () => Navigator.of(context).pop(), // Close dialog
+          ),
+          TextButton(
+            child: Text(
+              'Logout',
+              style: TextStyle(color: Colors.red),
+            ),
+            onPressed: () {
+              Navigator.of(context).pop(); // Close dialog
+              Navigator.pushNamedAndRemoveUntil(
+                  context, '/', (route) => false); // Navigate to root
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final String remark = getGpaRemark(gpa);
@@ -26,6 +53,13 @@ class ResultPage extends StatelessWidget {
       appBar: AppBar(
         title: Text('GPA Result'),
         backgroundColor: Colors.teal,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout),
+            tooltip: 'Logout',
+            onPressed: () => _showLogoutDialog(context),
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
